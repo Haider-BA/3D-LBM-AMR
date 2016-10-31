@@ -1,4 +1,3 @@
-
 #include <sstream>
 #include <istream>
 #include <iostream>
@@ -13,36 +12,12 @@
 #include "Node.h"
 #include "InputVariables.h"
 
-
 using namespace std;
-
-////Simulation Parameters
-//double ObstR;//20.0;
-//double ObstX;//10*ObstR;//40.0;
-//double ObstY;//200*0.5;
-//int xDim;//200;
-//int yDim;//500;//1021; //(8.2*ObstR)+2; //43;
-//double CharLength;//ObstR*2.0;
-//bool D2Q9i;//true;
-//bool InitCond;//1;
-//int tMax;//10;
-//double uMax;//0.08;
-//double Re;//100;
-//double Tolerance;//1.0e-6;
-
-
-////Compute Omega
-//double nu;// = uMax*(CharLength) / Re;
-//double omega1;// = 1.0/(3.0*nu+0.5);
-//std::vector<double> omega;
-
 
 //Global vars
 int ErrorFlag;
 
-
 ////LBM CONSTANTS
-
 //D3Q19 const
 double t [19] = {1.0/3.0,1.0/18.0,1.0/18.0,1.0/18.0,1.0/18.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,
 				1/18.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,
@@ -88,76 +63,28 @@ double M [19][19] = {   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  
 double M_inv [19][19];
 double psi_mag2 [19]; //square of the magnitude of vectors psi, constituting M
 
-string casename = "test2_med";
+string casename;
 
-double Spacing = 0.0;
-double ObstR = 2.5;//5;//5.0;//10.0;//.0;
-double ObstX = 50.5;//25;//70;//13.0*2.0*ObstR;
-double ObstX2 = ObstX+Spacing*2.0*ObstR;//58;//70;//13.0*2.0*ObstR;
-double ObstY = 2;//2;//50.5;//51.0*2.0*ObstR/2;//1022/2;
-double ObstZ = 20.5;//100;//35.5;//70.5;//50.5;//51.0*2.0*ObstR/2;//1022/2;
-int xDim = ObstX+15*2*ObstR+1+Spacing*2.0*ObstR;
-int yDim = 1;//1;//4;//61;//11;//102;//281; //(8.2*ObstR)+2;
-int zDim = 41;//71;//141;//102;//281; //(8.2*ObstR)+2;
+double Spacing, ObstR, ObstX, ObstX2, ObstY, ObstZ;
+int xDim, yDim, zDim;
 
-int maxlevel = 2;
+int maxlevel, tMax;
 
-double Re = 100;//21400;
-double uMax = 0.08;//1;
-double rhoIn = 1.0;
-double CharLength = ObstR*2.0;
-double dPdx = 0;//5.56e-7;
-double Tolerance = 1.0e-6;
+double Re, uMax, rhoIn, CharLength, dPdx, Tolerance;
 
-bool D2Q9i = true;
-bool MRT = 1;//1;//false;//true;
-bool LES = 0;//true;//true;
-bool AMR = 0;//true;//true;
-bool CB = 1;//true;//true; //Curved boundary treatment
-int  ForceB1 = CB1;//boundary for force calculations
-int  ForceB2 = CB2;//boundary for force calculations
+bool D2Q9i, MRT, LES, AMR, CB; 
+int  ForceB1, ForceB2;
 
-bool SaveState = 1;
-bool Periodics = 0;
-bool xPeriodics = 0;
-bool yPeriodics = 1;
-bool zPeriodics = 0;
+bool SaveState, Periodics, xPeriodics, yPeriodics, zPeriodics, InitPerturb, InitCond;
 
-bool InitPerturb = 0;
-bool InitCond = 0;//false;//true;
-//string initfile ("CC6_init1.state");
 string initfile (casename+".state");
 
-int tMax = 1000;// 20000;//10000;//10000;
+int StartAvg, StartRec, StartF, StartLR, nCPU;
 
-int StartAvg =1000;
-int StartRec =200000;//30;// 30000;//start recording velocity history
-int StartF = 0;//5000;//start recording force history
-int StartLR = 1;//start LR
+double s1 ,s2 ,s4 ,s10 ,s16; 
+bool scaleS;
 
-int nCPU = 2;
-
-double s1  = 1.0;//1.19;
-double s2  = 1.0;//1.4;
-double s4  = 1.0;//1.2;
-double s10 = 1.0;//1.4;
-double s16 = 1.0;//1.98;
-bool scaleS = 0;//1; //scale s's for LR
-
-
-
-int mp1x = xDim/4;
-int mp1y = yDim/4;
-int mp1z = zDim/4;
-int mp2x = xDim-1-xDim/4;
-int mp2y = yDim/4;
-int mp2z = zDim/4;
-int mp3x = xDim/4;
-int mp3y = yDim-1-yDim/4;
-int mp3z = zDim-1-zDim/4;
-int mp4x = xDim-1-xDim/4;
-int mp4y = yDim-1-yDim/4;
-int mp4z = zDim-1-zDim/4;
+int mp1x ,mp1y ,mp1z ,mp2x ,mp2y ,mp2z ,mp3x ,mp3y ,mp3z ,mp4x ,mp4y ,mp4z;
 
 vector<double> S1(0);
 vector<double> S2(0);
@@ -165,13 +92,9 @@ vector<double> S4(0);
 vector<double> S10(0);
 vector<double> S16(0);
 
+double nu, omega1;
 
-//Compute Omega
-double nu;// = uMax*(CharLength) / Re;
-double omega1;// = 1.0/(3.0*nu+0.5);
-std::vector<double> omega;
-
-
+vector<double> omega;
 
 vector<double> FXbuff(0);//pow(2,maxlevel));
 vector<double> FYbuff(0);//pow(2,maxlevel));
@@ -180,8 +103,7 @@ vector<double> FX2buff(0);//pow(2,maxlevel));
 vector<double> FY2buff(0);//pow(2,maxlevel));
 vector<double> FZ2buff(0);//pow(2,maxlevel));
 
-
-
+//relaxation rates for the 19 moments
 double S[19] = { 0, //s0 density
 				 1.19,//.19,//s1 omega1,//1, //energy e
 				 1.4,//.4,//s2 omega1,//1, //energy square, epsilon
@@ -203,8 +125,6 @@ double S[19] = { 0, //s0 density
 				 1.98};//.98}; //s16 (mz)
 
 
-
-
 // global functions for image and basic interpolations
 
 double PoisProf (double x){
@@ -222,7 +142,6 @@ bool CylinderImage2(int x,int y){
 	return ((x-ObstX)*(x-ObstX)+(y-ObstY)*(y-ObstY) <= (ObstR+5)*(ObstR+5)
 			&& (x-ObstX)*(x-ObstX)+(y-ObstY)*(y-ObstY) >= (ObstR-2)*(ObstR-2));
 }
-
 
 int Geometry(double x,double y,double z)
 {
@@ -411,8 +330,6 @@ void uZHist (ofstream& u_output, ofstream& w_output,
 	}
 }
 
-
-
 void CoarsenLoop (Node * Point, int TargetLevel){
 /*
 Input "Point" should be the coarsest level grid (Grid[i][j]), and target level is the resulting mesh level. Function checks the level of the "current" grid, and if it is less than the target level, it updates the pointer to Point->child[k] to look at the next refinement level. This is continued until the grid level of the pointer is equal to the target level. At this point, the function will delete all children nodes held by the current node, and ensures the children are NULL.
@@ -431,26 +348,7 @@ Input "Point" should be the coarsest level grid (Grid[i][j]), and target level i
 				Kid->child[k] = NULL;
 		}
 }
-//void NeighborLoop (Node * Point){//, int TargetLevel){
-///*
-//If Point has children that are not NULL, ChildNeighbor is used on Point, to define the neighbor relations of its children. Then, each child in Point are checked, until the NULL child is found.
-//*/
-//	Node * Kid;
-//	Kid = Point->child[0];
-//	if(Kid != NULL){
-//		Point->ChildNeighbor();
-//		for(int k = 0; k<4; k++){
-//			Kid = Point->child[k];
-//			NeighborLoop(Kid);
-//		}
-//	}
-//	else if(Kid == NULL){
-//		return;
-//	}
-//	else
-//		cout<<"something wrong in NeighborLoop\n";
-//}
-//
+
 void OmegaValues(){
 	if(omega1 < 0.5 || omega1 > 2.0)
 		cout<<"omega is out of acceptable range\n";
@@ -533,6 +431,7 @@ void MarchLoop3(Node * Point,int Target)
 		}
 	}
 } 
+
 void RefineLoop(Node * Point,int GridLevel,int Target)
 {
 /*
@@ -574,27 +473,7 @@ Interpolate f values to obtain child f values.
 		}
 	}
 } 
-//void SpatialInterpLoop3(Node * Point,int GridLevel,int Target)
-//{
-///*
-//Interpolate f values to obtain child f values. 
-//*/
-//	Node * Kid;
-//	if(Point->level == Target-1 && GridLevel >= Target){
-////		for(int k = 0;k<4;k++)
-////			Point->child[k]->edge = 1;
-//		Point->SpatialInterp1();
-////		for(int i = 0;i<4;i++)
-////			Point->child[i]->ComputeMacros();
-//	}
-//	else if (Point->child[0] != NULL)
-//	{
-//		for(int k = 0;k<4;k++){
-//			Kid = Point->child[k];
-//			SpatialInterpLoop3(Kid,GridLevel,Target);
-//		}
-//	}
-//} 
+ 
 void SpatialInterpLoop2(Node * Point,int GridLevel,int Target)
 {
 /*
@@ -724,10 +603,6 @@ void BBForceLoop(Node * Point,int Target,double& ForceX, double& ForceY, double&
 		}
 	}
 } 
-
-
-
-
 
 
 
@@ -1151,6 +1026,8 @@ void SmagCalc(Node **** Grid,double *** smag)
 				Grid[i+1][j][k]->u2-Grid[i-1][j][k]->u2)*0.25;
 		smag[i][j][k] = sqrt(S11*S11+S22*S22+S33*S33+S12*S12+S13*S13+S23*S23);
 	}}}
+
+
 }int main ()
 {
 	ErrorFlag = 0;
@@ -1163,10 +1040,80 @@ void SmagCalc(Node **** Grid,double *** smag)
 	double FY2 = 0;
 	double FZ2 = 0;
 
+	//define simulation inputs
+	casename = "test2_med";
+
+	Spacing = 0.0;
+	ObstR = 2.5;//5;//5.0;//10.0;//.0;
+	ObstX = 50.5;//25;//70;//13.0*2.0*ObstR;
+	ObstX2 = ObstX+Spacing*2.0*ObstR;//58;//70;//13.0*2.0*ObstR;
+	ObstY = 2;//2;//50.5;//51.0*2.0*ObstR/2;//1022/2;
+	ObstZ = 20.5;//100;//35.5;//70.5;//50.5;//51.0*2.0*ObstR/2;//1022/2;
+	xDim = ObstX+15*2*ObstR+1+Spacing*2.0*ObstR;
+	yDim = 1;//1;//4;//61;//11;//102;//281; //(8.2*ObstR)+2;
+	zDim = 41;//71;//141;//102;//281; //(8.2*ObstR)+2;
+
+	maxlevel = 2;
+
+	Re = 100;//21400;
+	uMax = 0.08;//1;
+	rhoIn = 1.0;
+	CharLength = ObstR*2.0;
+	dPdx = 0;//5.56e-7;
+	Tolerance = 1.0e-6;
+
+	D2Q9i = true;
+	MRT = 1;//1;//false;//true;
+	LES = 0;//true;//true;
+	AMR = 0;//true;//true;
+	CB = 1;//true;//true; //Curved boundary treatment
+	ForceB1 = CB1;//boundary for force calculations
+	ForceB2 = CB2;//boundary for force calculations
+
+	SaveState = 1;
+	Periodics = 0;
+	xPeriodics = 0;
+	yPeriodics = 1;
+	zPeriodics = 0;
+
+	InitPerturb = 0;
+	InitCond = 0;//false;//true;
+	initfile = casename+".state";
+
+	tMax = 1000;// 20000;//10000;//10000;
+
+	StartAvg =1000;
+	StartRec =200000;//30;// 30000;//start recording velocity history
+	StartF = 0;//5000;//start recording force history
+	StartLR = 1;//start LR
+
+	nCPU = 2;
+
+	s1  = 1.0;//1.19;
+	s2  = 1.0;//1.4;
+	s4  = 1.0;//1.2;
+	s10 = 1.0;//1.4;
+	s16 = 1.0;//1.98;
+	scaleS = 0;//1; //scale s's for LR
+
+	mp1x = xDim/4;
+	mp1y = yDim/4;
+	mp1z = zDim/4;
+	mp2x = xDim-1-xDim/4;
+	mp2y = yDim/4;
+	mp2z = zDim/4;
+	mp3x = xDim/4;
+	mp3y = yDim-1-yDim/4;
+	mp3z = zDim-1-zDim/4;
+	mp4x = xDim-1-xDim/4;
+	mp4y = yDim-1-yDim/4;
+	mp4z = zDim-1-zDim/4;
 
 	//Compute Omega
 	nu = uMax*(CharLength)/Re;
 	omega1 = 1.0/(3.0*nu+0.5);
+
+
 
 
 	int i,j,k,l,n,Target;
@@ -1313,8 +1260,6 @@ void SmagCalc(Node **** Grid,double *** smag)
 	cout<<"StartF:\t"<<StartF<<"\n\n";
 
 	cout<<"omega:\t"<<omega[0]<<"\n\n";
-
-
 
 	//read header lines for input file
 	fstream infile;
